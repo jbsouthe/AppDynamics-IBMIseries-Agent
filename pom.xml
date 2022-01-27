@@ -16,18 +16,31 @@
       <dependency>
           <groupId>org.apache.logging.log4j</groupId>
           <artifactId>log4j-core</artifactId>
-          <version>2.13.3</version>
+          <version>2.17.1</version>
       </dependency>
       <dependency>
           <groupId>org.apache.logging.log4j</groupId>
           <artifactId>log4j-api</artifactId>
-          <version>2.13.3</version>
+          <version>2.17.1</version>
       </dependency>
       <dependency>
           <groupId>com.zaxxer</groupId>
           <artifactId>HikariCP</artifactId>
           <version>4.0.3</version>
       </dependency>
+      <!-- https://mvnrepository.com/artifact/com.ibm.db2/jcc -->
+      <dependency>
+          <groupId>com.ibm.db2</groupId>
+          <artifactId>jcc</artifactId>
+          <version>11.5.7.0</version>
+      </dependency>
+      <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
+      <dependency>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+          <version>2.0.0-alpha1</version>
+      </dependency>
+
   </dependencies>
   <build>
       <sourceDirectory>${basedir}/src</sourceDirectory>
@@ -47,6 +60,32 @@
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-dependency-plugin</artifactId>
+            <version>3.2.0</version>
+            <executions>
+                <execution>
+                    <phase>generate-resources</phase>
+                    <goals>
+                        <goal>copy-dependencies</goal>
+                        <goal>build-classpath</goal>
+                    </goals>
+                    <configuration>
+                        <outputDirectory>${project.build.directory}/lib</outputDirectory>
+
+                        <!-- These properties are for build-classpath. It creates a classpath for the copied
+                             dependencies and puts it in the ${distro.classpath} property. The jar Class-Path
+                             uses spaces as separators. Unfortunately <pathSeparator> configuration property
+                             does not work with a space as value, so the pathSeparator is set to a character
+                             here and this is then replaced later using the regex-property plugin. -->
+                        <prefix>lib</prefix>
+                        <outputProperty>distro.classpath</outputProperty>
+                        <pathSeparator>:</pathSeparator>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
             <executions>
                 <execution>
                     <id>unpack</id>
@@ -61,15 +100,7 @@
                                 <artifactId>agent-api</artifactId>
                                 <version>1.0</version>
                                 <type>jar</type>
-                                <includes>com/appdynamics/agent/api/AppdynamicsAgent.class</includes>
-                                <outputDirectory>${project.build.outputDirectory}</outputDirectory>
-                            </artifactItem>
-                            <artifactItem>
-                                <groupId>org.json</groupId>
-                                <artifactId>json</artifactId>
-                                <version>20201115</version>
-                                <type>jar</type>
-                                <includes>**/*</includes>
+                                <!-- <includes>com/appdynamics/agent/api/AppdynamicsAgent.class</includes> -->
                                 <outputDirectory>${project.build.outputDirectory}</outputDirectory>
                             </artifactItem>
                             <artifactItem>
@@ -81,6 +112,24 @@
                             <artifactItem>
                                 <groupId>org.apache.logging.log4j</groupId>
                                 <artifactId>log4j-api</artifactId>
+                                <type>jar</type>
+                                <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                            </artifactItem>
+                            <artifactItem>
+                                <groupId>com.zaxxer</groupId>
+                                <artifactId>HikariCP</artifactId>
+                                <type>jar</type>
+                                <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                            </artifactItem>
+                            <artifactItem>
+                                <groupId>org.slf4j</groupId>
+                                <artifactId>slf4j-api</artifactId>
+                                <type>jar</type>
+                                <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                            </artifactItem>
+                            <artifactItem>
+                                <groupId>com.ibm.db2</groupId>
+                                <artifactId>jcc</artifactId>
                                 <type>jar</type>
                                 <outputDirectory>${project.build.outputDirectory}</outputDirectory>
                             </artifactItem>
@@ -97,8 +146,11 @@
         <configuration>
             <archive>
                 <manifest>
-                    <mainClass>com.cisco.josouthe.ProxyAgent</mainClass>
+                    <mainClass>com.cisco.josouthe.iseries.Agent</mainClass>
                 </manifest>
+                <manifestEntries>
+                    <Multi-Release>true</Multi-Release>
+                </manifestEntries>
             </archive>
           <includes>
             <include>**/*</include>
