@@ -1,9 +1,9 @@
-package main.java.com.cisco.josouthe.iseries;
+package com.cisco.josouthe.iseries;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import main.java.com.cisco.josouthe.iseries.data.HistoryLogInfo;
-import main.java.com.cisco.josouthe.iseries.exceptions.ConfigurationException;
+import com.cisco.josouthe.iseries.data.HistoryLogInfo;
+import com.cisco.josouthe.iseries.exceptions.ConfigurationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -21,7 +21,7 @@ public class Database {
     private HikariDataSource dataSource;
 
     public Database(Properties properties ) throws ConfigurationException {
-        if( !properties.contains("database.url") || !properties.contains("database.user") || !properties.contains("database.password"))
+        if( properties.getProperty("database.url","unset").equals("unset") || properties.getProperty("database.user","unset").equals("unset") || properties.getProperty("database.password","unset").equals("unset"))
             throw new ConfigurationException("Config properties must be present for database.url, database.user, and database.password");
         this.properties = properties;
         this.hikariConfig = new HikariConfig();
@@ -43,15 +43,22 @@ public class Database {
         String query = String.format("SELECT * FROM TABLE( QSYS2.HISTORY_LOG_INFO( " +
                 "START_TIME => '%s', END_TIME => '%s', GENERATE_SYSLOG => 'RFC3164' ) ) X", Util.getDateString(startTime), Util.getDateString(endTime));
         logger.debug("getHistoryLogInfo Query: '%s'",query);
+        Statement statement = null;
         try {
             Connection connection = getConnection();
-            Statement statement = connection.createStatement();
+            statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(query);
             while( resultSet.next() ) {
                 data.add(new HistoryLogInfo(resultSet));
             }
         } catch (SQLException exception) {
             logger.warn("Query: '%s' SQL Exception: %s",query,exception.getMessage());
+        } finally {
+            if( statement != null ) {
+                try {
+                    statement.close();
+                } catch (SQLException ignored) { }
+            }
         }
         return data.toArray( new HistoryLogInfo[0] );
     }

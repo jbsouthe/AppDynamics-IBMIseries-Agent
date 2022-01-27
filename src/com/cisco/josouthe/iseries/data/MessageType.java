@@ -1,4 +1,4 @@
-package main.java.com.cisco.josouthe.iseries.data;
+package com.cisco.josouthe.iseries.data;
 
 public enum MessageType {
     COMPLETION,
